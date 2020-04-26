@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+        <!--定义connection工厂-->
+        <rabbit:connection-factory id="connectionFactory" host="10.10.10.86" port="5673" username="rabbitadmin" password="123456" virtual-host="/test"/>
+
+        <!--定义rabbitmq模板-->
+        <!--queue="" 如果发送到队列则写队列-->
+        <!--exchange="" 如果发送到交换机则写交换机
+            routing-key=""  如果用到路由模式，需要定义此关键字
+        -->
+        <rabbit:template id="template" connection-factory="connectionFactory" exchange="fanoutExchange" />
+        <rabbit:admin id="admin" connection-factory="connectionFactory"/>
+        <!--消息需要发送到交换机还是队列-->
+            <!--定义队列-->
+        <rabbit:queue id="myQueue" name="myQueue" auto-declare="true"/>
+        <!--定义交换机-->
+        <rabbit:fanout-exchange name="fanoutExchange" auto-declare="true">
+            <!--将队列绑定到交换机-->
+            <rabbit:bindings>
+                <rabbit:binding queue="myQueue">
+                </rabbit:binding>
+            </rabbit:bindings>
+        </rabbit:fanout-exchange>
+        <!--定义监听容器，收到消息的时候会执行内部的配置-->
+        <rabbit:listener-container connection-factory="connectionFactory">
+            <!--指定 了消费者bean id,接收消息的方法，和队列名称-->
+            <rabbit:listener ref="consumer" method="test" queue-names="myQueue"/>
+        </rabbit:listener-container>
+        <!--定义消费者，定义那个类的某个方法用于处理收到的消息-->
+        <bean id="consumer" class="rabbitmq.spring.MyConsumer" />
+
+        <!--direct交换机定义参考-->
+        <!--<rabbit:direct-exchange name="directExchage" durable="true" auto-delete="false">-->
+            <!--<rabbit:bindings>-->
+                <!--<rabbit:binding queue="myQueue" key="routekey1"> </rabbit:binding>-->
+            <!--</rabbit:bindings>-->
+        <!--</rabbit:direct-exchange>-->
+
+        <!--topic交换机定义参考-->
+        <!--<rabbit:topic-exchange name="directExchage" durable="true" auto-delete="false">-->
+            <!--<rabbit:bindings>-->
+                <!--<rabbit:binding pattern="dfsdfsdf.*" queue="myQueue"></rabbit:binding>-->
+            <!--</rabbit:bindings>-->
+        <!--</rabbit:topic-exchange>-->
+
+</beans>

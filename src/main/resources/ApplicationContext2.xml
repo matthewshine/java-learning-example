@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+        <!--定义connection工厂
+        publisher-confirms="true"的情况下，确认失败的回调才会执行。
+        -->
+        <context:component-scan base-package="rabbitmq.spring2"/>
+        <rabbit:connection-factory id="connectionFactory"
+                                   host="10.10.10.86"
+                                   port="5673"
+                                   username="rabbitadmin" password="123456"
+                                   virtual-host="/test"
+                                   publisher-confirms="true" />
+
+        <rabbit:admin id="admin" connection-factory="connectionFactory"/>
+        <rabbit:template id="amqptemplate" connection-factory="connectionFactory"
+                                            confirm-callback="confirmCallBackListener"
+                                            return-callback="returnCallBackListener"
+                                            mandatory="true"/>
+        <!--消息需要发送到交换机还是队列-->
+        <!--定义队列-->
+        <rabbit:queue name="CONFIRM_TEST"/>
+        <!--定义交换机-->
+        <rabbit:direct-exchange name="DIRECT_EX" id="DIRECT_EX">
+            <!--将队列绑定到交换机-->
+            <rabbit:bindings>
+                <rabbit:binding queue="CONFIRM_TEST"/>
+            </rabbit:bindings>
+        </rabbit:direct-exchange>
+
+        <!--定义监听容器，收到消息的时候会执行内部的配置-->
+        <rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual">
+            <!--指定 了消费者bean id,接收消息的方法，和队列名称-->
+                <rabbit:listener queues="CONFIRM_TEST" ref="receiveConfirmTestListener"/>
+        </rabbit:listener-container>
+        <!--定义消费者，定义那个类的某个方法用于处理收到的消息-->
+        <bean id="consumer" class="rabbitmq.spring.MyConsumer" />
+
+        <!--direct交换机定义参考-->
+        <!--<rabbit:direct-exchange name="directExchage" durable="true" auto-delete="false">-->
+            <!--<rabbit:bindings>-->
+                <!--<rabbit:binding queue="myQueue" key="routekey1"> </rabbit:binding>-->
+            <!--</rabbit:bindings>-->
+        <!--</rabbit:direct-exchange>-->
+
+        <!--topic交换机定义参考-->
+        <!--<rabbit:topic-exchange name="directExchage" durable="true" auto-delete="false">-->
+            <!--<rabbit:bindings>-->
+                <!--<rabbit:binding pattern="dfsdfsdf.*" queue="myQueue"></rabbit:binding>-->
+            <!--</rabbit:bindings>-->
+        <!--</rabbit:topic-exchange>-->
+
+</beans>
